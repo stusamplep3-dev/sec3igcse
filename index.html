@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0478 Term 2 Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one centred column; a row of 15 "memory cells" tracks progress like addresses in RAM */
+:root {
+  --bg: #EEF2F7;
+  --surface: #FFFFFF;
+  --ink: #132033;
+  --muted: #586880;
+  --line: #D3DBE6;
+  --accent: #1D5BD6;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3ECFC;
+  --ok: #19804A;
+  --ok-soft: #E2F4E9;
+  --bad: #C2372C;
+  --bad-soft: #FBE7E5;
+  --part: #B87508;
+  --part-soft: #FBF0DC;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1420; --surface: #15202F; --ink: #E5EBF3; --muted: #95A4B8; --line: #2A394D;
+    --accent: #7AA5FF; --accent-ink: #0D1420; --accent-soft: #1C2D4A;
+    --ok: #52C784; --ok-soft: #14301F; --bad: #FF7D70; --bad-soft: #3A1B19;
+    --part: #F0B44A; --part-soft: #36290F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1420; --surface: #15202F; --ink: #E5EBF3; --muted: #95A4B8; --line: #2A394D;
+  --accent: #7AA5FF; --accent-ink: #0D1420; --accent-soft: #1C2D4A;
+  --ok: #52C784; --ok-soft: #14301F; --bad: #FF7D70; --bad-soft: #3A1B19;
+  --part: #F0B44A; --part-soft: #36290F;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(28px, 6vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.25; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: clamp(18px, 4vw, 28px); display: grid; gap: 18px; min-width: 0; }
+
+/* progress cells */
+.cells { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
+.cell { height: 10px; border-radius: 3px; background: var(--line); }
+.cell.cur { background: var(--accent); }
+.cell.ok { background: var(--ok); }
+.cell.part { background: var(--part); }
+.cell.bad { background: var(--bad); }
+.qmeta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.qmeta .addr { color: var(--accent); font-weight: 700; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 700; letter-spacing: .02em; }
+
+/* MCQ options */
+.opts { display: grid; gap: 10px; }
+.opt {
+  display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; text-align: left;
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--ink); font: inherit; cursor: pointer;
+  transition: border-color .12s, background-color .12s;
+}
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt:focus-visible, select:focus-visible, .btn:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.opt .letter { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 14px; background: var(--bg); color: var(--muted); }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt[aria-pressed="true"] .letter { background: var(--accent); color: var(--accent-ink); }
+.opt:disabled { cursor: default; }
+.opt.is-right { border-color: var(--ok); background: var(--ok-soft); }
+.opt.is-right .letter { background: var(--ok); color: var(--surface); }
+.opt.is-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt.is-wrong .letter { background: var(--bad); color: var(--surface); }
+.opt .txt { padding-top: 4px; min-width: 0; }
+
+/* matching */
+.mrows { display: grid; gap: 10px; }
+.mrow { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 10px 14px; align-items: center; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px; }
+.mrow.is-right { border-color: var(--ok); background: var(--ok-soft); }
+.mrow.is-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.mleft { font-weight: 700; min-width: 0; }
+.mrow select { width: 100%; font: inherit; font-size: 15px; padding: 9px 10px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.mfix { grid-column: 1 / -1; font-size: 15px; color: var(--ok); }
+.mfix b { font-weight: 700; }
+@media (max-width: 560px) { .mrow { grid-template-columns: 1fr; } }
+
+.feedback { border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; border: 1.5px solid; }
+.feedback.ok { background: var(--ok-soft); border-color: var(--ok); }
+.feedback.part { background: var(--part-soft); border-color: var(--part); }
+.feedback.bad { background: var(--bad-soft); border-color: var(--bad); }
+.feedback strong { font-family: var(--font-display); font-size: 18px; }
+.feedback.ok strong { color: var(--ok); }
+.feedback.part strong { color: var(--part); }
+.feedback.bad strong { color: var(--bad); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; }
+.actions .hint { margin-right: auto; font-size: 14px; color: var(--muted); }
+.btn { font: inherit; font-weight: 700; padding: 11px 20px; border-radius: 10px; border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--accent); }
+
+/* start */
+.topics { display: grid; gap: 10px; }
+.topic { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: baseline; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.topic:last-child { border-bottom: 0; padding-bottom: 0; }
+.topic .wk { font-family: var(--font-mono); font-size: 12px; color: var(--muted); width: 52px; }
+.topic .n { font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 700; font-size: 15px; }
+.field input { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; max-width: 360px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 15px; color: var(--muted); }
+.facts b { color: var(--ink); }
+
+/* summary */
+.score { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 24px; }
+.big { font-family: var(--font-display); font-weight: 800; font-size: clamp(48px, 12vw, 72px); line-height: .95; font-variant-numeric: tabular-nums; }
+.big small { font-size: .4em; color: var(--muted); font-weight: 600; }
+.verdict { display: grid; gap: 2px; padding-bottom: 6px; }
+.verdict .pct { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
+.bars { display: grid; gap: 12px; }
+.bar { display: grid; gap: 4px; }
+.bar .lbl { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; }
+.bar .lbl span:last-child { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.track { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.fill { height: 100%; border-radius: 5px; }
+.review { display: grid; gap: 12px; }
+.ritem { border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.ritem.ok { border-left-color: var(--ok); }
+.ritem.part { border-left-color: var(--part); }
+.ritem.bad { border-left-color: var(--bad); }
+.rhead { display: flex; justify-content: space-between; gap: 10px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.rhead .m { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ritem.ok .m { color: var(--ok); } .ritem.part .m { color: var(--part); } .ritem.bad .m { color: var(--bad); }
+.rq { font-weight: 700; }
+.rans { font-size: 15px; display: grid; gap: 4px; }
+.rans .you-bad { color: var(--bad); }
+.rans .you-ok { color: var(--ok); }
+.rexp { font-size: 15px; color: var(--muted); }
+.hist { font-size: 14px; color: var(--muted); display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+.hist div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--line); padding-bottom: 4px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">IGCSE Computer Science 0478 · Term 2 · Weeks 1–3</div>
+    <h1>Storage, Networks &amp; Software Quiz</h1>
+  </header>
+  <main id="app"></main>
+</div>
+
+<script>
+const TOPICS = {
+  ds: { name: "3.3 Data Storage", wk: "Week 1" },
+  nh: { name: "3.4 Network Hardware", wk: "Week 2" },
+  sw: { name: "4.1 Types of Software & Interrupts", wk: "Week 3" }
+};
+
+const BANK = [
+  { id: "ds1", topic: "ds", type: "mcq",
+    q: "Which of these is an example of primary storage?",
+    options: ["RAM", "Solid-state drive (SSD)", "DVD", "USB flash drive"], answer: 0,
+    explain: "Primary storage is accessed directly by the CPU. RAM and ROM are primary storage. SSDs, DVDs and USB flash drives are secondary storage." },
+  { id: "ds3", topic: "ds", type: "match", fixed: true,
+    q: "Match each storage device to its type of storage.",
+    pairs: [["Hard disk drive (HDD)", "Magnetic"], ["DVD", "Optical"], ["SD memory card", "Solid-state"], ["Magnetic tape", "Magnetic"]],
+    choices: ["Magnetic", "Optical", "Solid-state"],
+    explain: "Magnetic storage uses magnetised areas on spinning platters or tape. Optical storage uses a laser on a disc (CD, DVD, Blu-ray). Solid-state storage uses flash memory with no moving parts (SSD, USB flash drive, SD card)." },
+  { id: "ds4", topic: "ds", type: "mcq",
+    q: "How is data read from an optical disc such as a Blu-ray?",
+    options: ["A laser shines on the spinning disc and the light reflected from pits and lands is read as 1s and 0s", "A read/write head detects magnetised areas on a spinning platter", "Transistors measure the electrons trapped in floating gates", "The data is downloaded from a server over the internet"], answer: 0,
+    explain: "Optical storage uses a laser. Pits and lands reflect light differently, and the difference is read as binary. The other options describe magnetic storage, solid-state storage and cloud storage." },
+  { id: "ds5", topic: "ds", type: "mcq",
+    q: "Why can a solid-state drive (SSD) access data faster than a hard disk drive (HDD)?",
+    options: ["It has no moving parts, so there is no waiting for a platter to spin or a head to move", "It uses a laser that moves faster than a read/write head", "It saves the data on the cloud instead", "It always has a larger capacity than an HDD"], answer: 0,
+    explain: "SSDs use flash memory (NAND or NOR technology) made of transistors, with no moving parts. Data can be accessed almost instantly. No moving parts also makes SSDs more durable and lower in power use." },
+  { id: "ds6", topic: "ds", type: "mcq",
+    q: "What is virtual memory?",
+    options: ["Part of secondary storage used as extra RAM when RAM is full", "Part of RAM used as extra storage when the hard disk is full", "Storage space that you rent over the internet", "Fast memory inside the CPU that holds frequently used instructions"], answer: 0,
+    explain: "When RAM is full, the operating system moves pages of data that are not needed right now onto an area of the HDD or SSD. They are swapped back into RAM when needed. This lets the computer keep running more programs, but it is slower than RAM. The last option describes cache." },
+  { id: "ds7", topic: "ds", type: "match", fixed: true,
+    q: "Is each statement an advantage or a disadvantage of storing data on the cloud instead of locally?",
+    pairs: [["Files can be opened from any device with an internet connection", "Advantage"], ["You cannot reach your files without an internet connection", "Disadvantage"], ["You can increase your storage space easily by paying for more", "Advantage"], ["The security of your data depends on a third-party company", "Disadvantage"]],
+    choices: ["Advantage", "Disadvantage"],
+    explain: "Cloud storage lets you access and share files anywhere, scale storage easily, and the provider looks after backups. But it needs an internet connection, can cost a subscription, and a third party controls the security of your data." },
+
+  { id: "nh1", topic: "nh", type: "mcq",
+    q: "Which component gives a computer its MAC address and lets it connect to a network?",
+    options: ["Network interface card (NIC)", "Router", "CPU", "Hard disk drive"], answer: 0,
+    explain: "A computer needs a NIC to access a network (wired or wireless). The manufacturer gives every NIC a unique MAC address." },
+  { id: "nh2", topic: "nh", type: "mcq",
+    q: "A MAC address is 48 bits long, written as 12 hexadecimal digits, e.g. 00:1A:2B:3C:4D:5E. What does the first half identify?",
+    options: ["The manufacturer of the device", "The serial number of the device", "The network the device is connected to", "Where the device is located"], answer: 0,
+    explain: "The first 6 hex digits are the manufacturer code (00:1A:2B in the example). The last 6 hex digits are the serial number of the device (3C:4D:5E)." },
+  { id: "nh3", topic: "nh", type: "match",
+    q: "Match each term to its description.",
+    pairs: [["MAC address", "A unique physical address given to a NIC by the manufacturer"], ["IPv4 address", "A 32-bit address written as four denary numbers, e.g. 192.168.0.1"], ["IPv6 address", "A 128-bit address written as groups of hexadecimal digits separated by colons"], ["Static IP address", "An IP address that stays the same every time the device connects"]],
+    explain: "A MAC address identifies the device's NIC. An IP address identifies a device on a network. IPv4 is 32-bit, IPv6 is 128-bit. A static IP never changes; a dynamic IP is given out each time the device connects and can change." },
+  { id: "nh4", topic: "nh", type: "mcq",
+    q: "Which of these is a valid IPv4 address?",
+    options: ["172.16.254.1", "192.168.1.256", "2001:0db8:85a3::8a2e", "00:1A:2B:3C:4D:5E"], answer: 0,
+    explain: "IPv4 uses four denary numbers from 0 to 255 separated by dots, so 256 is too big. The third option is an IPv6 address and the last one is a MAC address." },
+  { id: "nh5", topic: "nh", type: "mcq",
+    q: "What is the role of a router in a network?",
+    options: ["It receives data packets and forwards them towards their destination using IP addresses", "It gives every device its MAC address", "It permanently stores every website on the internet", "It translates application software into machine code"], answer: 0,
+    explain: "A router connects networks together, for example a home LAN to the internet. It reads the destination IP address of each data packet and sends it to the next router or the correct device. It can also give IP addresses to devices on the local network." },
+
+  { id: "sw1", topic: "sw", type: "match", fixed: true,
+    q: "Is each piece of software system software or application software?",
+    pairs: [["Operating system", "System software"], ["Spreadsheet", "Application software"], ["Anti-virus (utility program)", "System software"], ["Web browser", "Application software"]],
+    choices: ["System software", "Application software"],
+    explain: "System software runs and manages the computer and gives a platform for other software: operating systems, utility programs, device drivers. Application software lets the user do a task: word processors, spreadsheets, web browsers, games." },
+  { id: "sw2", topic: "sw", type: "match",
+    q: "Match each operating system function to what it does.",
+    pairs: [["Memory management", "Decides which part of RAM each program uses so programs do not overwrite each other"], ["File management", "Lets the user create, name, copy, move and delete files and folders"], ["Providing a user interface", "Lets the user interact with the computer through a GUI or command line"], ["Peripheral management", "Controls input and output devices using device drivers"]],
+    explain: "Other OS functions include multitasking, handling interrupts, managing user accounts and providing security." },
+  { id: "sw3", topic: "sw", type: "mcq",
+    q: "Which order shows what is needed to run application software, starting from the bottom layer?",
+    options: ["Hardware → Firmware → Operating system → Application", "Firmware → Hardware → Application → Operating system", "Hardware → Operating system → Application → Firmware", "Operating system → Hardware → Firmware → Application"], answer: 0,
+    explain: "Firmware (such as the bootloader stored in ROM) runs directly on the hardware and loads the operating system when the computer starts. The operating system then provides the platform that applications run on." },
+  { id: "sw4", topic: "sw", type: "mcq",
+    q: "A key is pressed while a program is running, which sends an interrupt. What does the CPU do?",
+    options: ["Finishes the current fetch–execute cycle, saves the current task, runs the interrupt service routine (ISR), then carries on with the task", "Stops at once, deletes the current task from RAM and restarts it", "Ignores the interrupt until every running program has closed", "Sends the interrupt to secondary storage to deal with later"], answer: 0,
+    explain: "An interrupt is a signal that something needs the CPU's attention. It can come from hardware (key press, printer out of paper) or software (division by zero). The CPU checks for interrupts after each fetch–execute cycle. If the interrupt has a higher priority, the CPU saves its current state, runs the ISR, then restores the state and continues." }
+];
+
+const Q = Object.fromEntries(BANK.map(q => [q.id, q]));
+const HKEY = "q0478-term2-history";
+const app = document.getElementById("app");
+let S;
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
+function hex(n) { return "0x" + n.toString(16).toUpperCase().padStart(2, "0"); }
+
+function newRun() {
+  return shuffle(BANK).map(q => q.type === "mcq"
+    ? { id: q.id, opts: shuffle(q.options.map((t, i) => ({ t, c: i === q.answer }))), resp: null, checked: false }
+    : { id: q.id, rows: shuffle(q.pairs.map((_, i) => i)), choices: q.fixed ? q.choices : shuffle(q.pairs.map(p => p[1])), resp: {}, checked: false });
+}
+function maxOf(it) { const q = Q[it.id]; return q.type === "mcq" ? 1 : q.pairs.length; }
+function marksOf(it) {
+  const q = Q[it.id];
+  if (q.type === "mcq") return it.resp != null && it.opts[it.resp].c ? 1 : 0;
+  return q.pairs.reduce((n, p, i) => n + (it.resp[i] === p[1] ? 1 : 0), 0);
+}
+function status(it) { const m = marksOf(it), x = maxOf(it); return m === x ? "ok" : m > 0 ? "part" : "bad"; }
+function ready(it) { return Q[it.id].type === "mcq" ? it.resp != null : Q[it.id].pairs.every((_, i) => it.resp[i]); }
+
+function loadHist() { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch (e) { return []; } }
+function saveHist(h) { try { localStorage.setItem(HKEY, JSON.stringify(h.slice(-20))); } catch (e) {} }
+const TOTAL = BANK.reduce((n, q) => n + (q.type === "mcq" ? 1 : q.pairs.length), 0);
+
+function histHTML(h) {
+  if (!h.length) return "";
+  return `<div class="hist"><b style="color:var(--ink)">Your recent attempts on this device</b>${h.slice(-5).reverse().map(a =>
+    `<div><span>${esc(a.date)}${a.name ? " · " + esc(a.name) : ""}</span><span>${a.score}/${a.max} (${Math.round(100 * a.score / a.max)}%)</span></div>`).join("")}</div>`;
+}
+
+function renderStart() {
+  const h = loadHist();
+  const best = h.length ? Math.max(...h.map(a => a.score)) : null;
+  const count = t => BANK.filter(q => q.topic === t).length;
+  app.innerHTML = `<section class="card">
+    <p>Answer 15 questions on what we covered in Weeks 1 to 3. You'll see the correct answer and an explanation after each question, and a full summary at the end. You can try as many times as you like; the questions and choices are shuffled each time.</p>
+    <div class="facts"><span><b>10</b> multiple choice · 1 mark each</span><span><b>5</b> matching · 1 mark per pair</span><span><b>${TOTAL}</b> marks in total</span></div>
+    <div class="topics">${Object.entries(TOPICS).map(([k, t]) =>
+      `<div class="topic"><span class="wk">${t.wk}</span><span>${t.name}</span><span class="n">${count(k)} Qs</span></div>`).join("")}</div>
+    <div class="field"><label for="name">Your name (shown on your summary)</label><input id="name" autocomplete="name" placeholder="e.g. Maria Santos" value="${esc(S.name || "")}"></div>
+    ${best != null ? `<div class="facts"><span>Attempts: <b>${h.length}</b></span><span>Best score: <b>${best}/${TOTAL}</b></span></div>` : ""}
+    <div class="actions"><button class="btn" data-act="start">Start quiz</button></div>
+    ${histHTML(h)}
+  </section>`;
+}
+
+function cellsHTML() {
+  return `<div class="cells" aria-hidden="true">${S.run.map((it, i) =>
+    `<div class="cell ${it.checked ? status(it) : i === S.idx ? "cur" : ""}"></div>`).join("")}</div>`;
+}
+
+function renderQuiz() {
+  const it = S.run[S.idx], q = Q[it.id], last = S.idx === S.run.length - 1;
+  let body;
+  if (q.type === "mcq") {
+    body = `<div class="opts" role="group" aria-label="Answer choices">${it.opts.map((o, i) => {
+      let cls = "";
+      if (it.checked) cls = o.c ? "is-right" : i === it.resp ? "is-wrong" : "";
+      return `<button class="opt ${cls}" data-opt="${i}" aria-pressed="${i === it.resp}" ${it.checked ? "disabled" : ""}>
+        <span class="letter">${"ABCD"[i]}</span><span class="txt">${esc(o.t)}</span></button>`;
+    }).join("")}</div>`;
+  } else {
+    body = `<div class="mrows">${it.rows.map(pi => {
+      const p = q.pairs[pi], v = it.resp[pi] || "";
+      const right = v === p[1];
+      return `<div class="mrow ${it.checked ? (right ? "is-right" : "is-wrong") : ""}">
+        <label class="mleft" for="m-${it.id}-${pi}">${esc(p[0])}</label>
+        <select id="m-${it.id}-${pi}" data-pair="${pi}" ${it.checked ? "disabled" : ""}>
+          <option value="">Choose…</option>
+          ${[...new Set(it.choices)].map(c => `<option ${c === v ? "selected" : ""}>${esc(c)}</option>`).join("")}
+        </select>
+        ${it.checked && !right ? `<div class="mfix">Correct answer: <b>${esc(p[1])}</b></div>` : ""}
+      </div>`;
+    }).join("")}</div>`;
+  }
+  let fb = "";
+  if (it.checked) {
+    const st = status(it), m = marksOf(it), x = maxOf(it);
+    const head = st === "ok" ? "Correct!" : st === "part" ? `Partly right: ${m} of ${x} pairs` : q.type === "mcq" ? "Not quite" : `0 of ${x} pairs`;
+    fb = `<div class="feedback ${st}" role="status"><strong>${head}</strong><p>${esc(q.explain)}</p></div>`;
+  }
+  const kind = q.type === "mcq" ? "Choose one answer" : "Choose a match for each item";
+  app.innerHTML = `<section class="card">
+    ${cellsHTML()}
+    <div class="qmeta"><span><span class="addr">${hex(S.idx + 1)}</span> · Question ${S.idx + 1} of ${S.run.length}</span><span class="tag">${TOPICS[q.topic].name}</span></div>
+    <div style="display:grid;gap:6px"><h2>${esc(q.q)}</h2><p class="muted" style="font-size:15px">${kind} · ${maxOf(it)} mark${maxOf(it) > 1 ? "s" : ""}</p></div>
+    ${body}
+    ${fb}
+    <div class="actions">
+      <span class="hint">Score so far: ${S.run.reduce((n, r) => n + (r.checked ? marksOf(r) : 0), 0)} / ${S.run.reduce((n, r) => n + (r.checked ? maxOf(r) : 0), 0)}</span>
+      ${it.checked
+        ? `<button class="btn" data-act="next">${last ? "See my summary" : "Next question"}</button>`
+        : `<button class="btn" data-act="check" ${ready(it) ? "" : "disabled"}>Check answer</button>`}
+    </div>
+  </section>`;
+}
+
+function answerText(it, q) {
+  if (q.type === "mcq") {
+    const you = it.opts[it.resp], right = it.opts.find(o => o.c);
+    return you.c
+      ? `<span class="you-ok">Your answer: ${esc(you.t)}</span>`
+      : `<span class="you-bad">Your answer: ${esc(you.t)}</span><span>Correct answer: ${esc(right.t)}</span>`;
+  }
+  return q.pairs.map((p, i) => it.resp[i] === p[1]
+    ? `<span class="you-ok">✓ ${esc(p[0])} → ${esc(p[1])}</span>`
+    : `<span class="you-bad">✗ ${esc(p[0])} → ${esc(it.resp[i])}</span><span style="padding-left:1.2em">Correct: ${esc(p[1])}</span>`).join("");
+}
+
+function renderSummary() {
+  const score = S.run.reduce((n, it) => n + marksOf(it), 0);
+  const pct = Math.round(100 * score / TOTAL);
+  const verdict = pct >= 85 ? "Excellent work!" : pct >= 65 ? "Good work. Check the ones you missed." : pct >= 45 ? "Getting there. Review the explanations and try again." : "Keep revising. Read the explanations below, then try again.";
+  const fullyRight = S.run.filter(it => status(it) === "ok").length;
+  const bars = Object.entries(TOPICS).map(([k, t]) => {
+    const its = S.run.filter(it => Q[it.id].topic === k);
+    const m = its.reduce((n, it) => n + marksOf(it), 0), x = its.reduce((n, it) => n + maxOf(it), 0);
+    const p = m / x, col = p >= .8 ? "var(--ok)" : p >= .5 ? "var(--part)" : "var(--bad)";
+    return `<div class="bar"><div class="lbl"><span>${t.name}</span><span>${m}/${x}</span></div><div class="track"><div class="fill" style="width:${Math.max(p * 100, 2)}%;background:${col}"></div></div></div>`;
+  }).join("");
+  const review = S.run.map((it, i) => {
+    const q = Q[it.id], st = status(it);
+    return `<div class="ritem ${st}"><div class="rhead"><span>${hex(i + 1)} · ${TOPICS[q.topic].name}</span><span class="m">${marksOf(it)}/${maxOf(it)}</span></div>
+      <div class="rq">${esc(q.q)}</div><div class="rans">${answerText(it, q)}</div><div class="rexp">${esc(q.explain)}</div></div>`;
+  }).join("");
+  app.innerHTML = `<div style="display:grid;gap:20px">
+    <section class="card">
+      <div class="eyebrow">Quiz summary${S.name ? " · " + esc(S.name) : ""} · ${esc(S.doneAt)}</div>
+      <div class="score"><div class="big">${score}<small> / ${TOTAL}</small></div>
+        <div class="verdict"><span class="pct">${pct}%</span><span>${verdict}</span></div></div>
+      <p class="muted" style="font-size:15px">${fullyRight} of 15 questions fully correct.</p>
+      ${cellsHTML()}
+      <div class="bars">${bars}</div>
+      <div class="actions"><button class="btn ghost" data-act="home">Back to start</button><button class="btn" data-act="start">Try again</button></div>
+    </section>
+    <section class="card"><h2>Review your answers</h2><div class="review">${review}</div>
+      <div class="actions"><button class="btn" data-act="start">Try again</button></div></section>
+    ${loadHist().length ? `<section class="card">${histHTML(loadHist())}</section>` : ""}
+  </div>`;
+}
+
+function render() {
+  if (S.screen === "quiz") renderQuiz();
+  else if (S.screen === "summary") renderSummary();
+  else renderStart();
+}
+
+app.addEventListener("click", e => {
+  const opt = e.target.closest("[data-opt]");
+  if (opt && S.screen === "quiz") {
+    const it = S.run[S.idx];
+    if (it.checked) return;
+    it.resp = +opt.dataset.opt;
+    app.querySelectorAll("[data-opt]").forEach(b => b.setAttribute("aria-pressed", b === opt));
+    app.querySelector('[data-act="check"]').disabled = false;
+    return;
+  }
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (!act) return;
+  if (act === "start") {
+    const n = document.getElementById("name");
+    if (n) S.name = n.value.trim();
+    S.run = newRun(); S.idx = 0; S.screen = "quiz";
+  } else if (act === "check") {
+    S.run[S.idx].checked = true;
+  } else if (act === "next") {
+    if (S.idx < S.run.length - 1) S.idx++;
+    else {
+      S.screen = "summary";
+      S.doneAt = new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+      const h = loadHist();
+      h.push({ name: S.name, score: S.run.reduce((n, it) => n + marksOf(it), 0), max: TOTAL, date: S.doneAt });
+      saveHist(h);
+    }
+  } else if (act === "home") {
+    S.screen = "start";
+  }
+  render();
+  window.scrollTo({ top: 0 });
+  app.querySelector(".btn, .opt, select")?.focus({ preventScroll: true });
+});
+
+app.addEventListener("change", e => {
+  const sel = e.target.closest("select[data-pair]");
+  if (!sel || S.screen !== "quiz") return;
+  const it = S.run[S.idx];
+  it.resp[sel.dataset.pair] = sel.value;
+  app.querySelector('[data-act="check"]').disabled = !ready(it);
+});
+app.addEventListener("input", e => { if (e.target.id === "name") S.name = e.target.value; });
+
+function start(data) {
+  S = data && data.S ? data.S : { screen: "start", name: "", run: [], idx: 0 };
+  render();
+}
+window.claude?.hot?.snapshot?.(() => ({ S }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
